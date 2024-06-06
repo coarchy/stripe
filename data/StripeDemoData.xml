@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+This software is in the public domain under CC0 1.0 Universal plus a
+Grant of Patent License.
+
+To the extent possible under law, the author(s) have dedicated all
+copyright and related and neighboring rights to this software to the
+public domain worldwide. This software is distributed without any
+warranty.
+
+You should have received a copy of the CC0 Public Domain Dedication
+along with this software (see the LICENSE.md file). If not, see
+<http://creativecommons.org/publicdomain/zero/1.0/>.
+-->
+<entity-facade-xml type="demo">
+    <!-- Demo data -->
+
+    <!-- TODO: Configure this here: http://localhost:8080/qapps/system/SystemMessage/Remote/MessageRemoteDetail?systemMessageRemoteId=DemoStripe
+     SystemMessageRemote needs the publicKey to be the stripe publishable key and the privateKey to be the stripe secret key -->
+    <moqui.service.message.SystemMessageRemote systemMessageRemoteId="DemoStripe" description="Stripe Demo" authHeaderName="Stripe-Signature" messageAuthEnumId="SmatHmacSha256Timestamp"/>
+    <mantle.account.method.PaymentGatewayConfig paymentGatewayConfigId="DemoStripe" paymentGatewayTypeEnumId="PgtStripe" description="Stripe Demo Payment Gateway" systemMessageRemoteId="DemoStripe"
+            authorizeServiceName="stripe.StripeServices.authorizeAndCapture#Payment"
+            captureServiceName="stripe.StripeServices.capture#Payment"/>
+    <productStores productStoreId="coarchy" systemMessageRemoteId="DemoStripe">
+        <!-- Set up the payment gateway for the product store -->
+        <mantle.product.store.ProductStorePaymentGateway paymentInstrumentEnumId="PiStripe" paymentGatewayConfigId="DemoStripe"/>
+    </productStores>
+
+</entity-facade-xml>
