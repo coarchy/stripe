@@ -22,7 +22,7 @@ Vue.component('m-stripe', {
         '</form>',
     methods: {
         async initialize() {
-            const response = await fetch("/stripe/Checkout/createPaymentIntent", {
+            const response = await fetch("/qapps/Payment/createPaymentIntent", {
                 cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
                 credentials: "same-origin", // include, *same-origin, omit
                 method: 'GET',

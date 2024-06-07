@@ -24,6 +24,8 @@ Better Documentation for how to use it in the first place
 - include links to stripe configuration of the stripe ui
 - include links to the stripe api
 - talk about PaymentGatewayResponse
+- To use the Payment screen, need to either have admin or put the User in the STRIPE_USERS
+- 
 
 Limitation of it
 - stripe is a big set of products, but we only use a very tiny subset of them here

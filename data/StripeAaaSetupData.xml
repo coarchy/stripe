@@ -13,7 +13,6 @@ along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
 <entity-facade-xml type="seed">
-
     <!-- ========== Payment Gateway and System Message ========== -->
     <moqui.service.message.SystemMessageType systemMessageTypeId="StripeWebhookEvent" consumeServiceName="stripe.StripeServices.consume#StripeWebhookEvent" description="Stripe Webhook Event"/>
     <moqui.basic.Enumeration description="Stripe" enumId="PgtStripe" enumTypeId="PaymentGatewayType"/>
@@ -21,5 +20,15 @@ along with this software (see the LICENSE.md file). If not, see
     <!-- ========== Payment Method an Instrument ========== -->
     <moqui.basic.Enumeration description="Stripe" enumId="PmtStripe" enumTypeId="PaymentMethodType"/>
     <moqui.basic.Enumeration description="Stripe" enumId="PiStripe" enumTypeId="PaymentInstrument" relatedEnumId="PmtStripe"/>
+
+    <!-- ========== Authorization ========== -->
+    <moqui.basic.Enumeration description="Stripe App" enumId="UgtStripe" enumTypeId="UserGroupType"/>
+    <userGroups userGroupId="STRIPE_USERS" description="Normal Stripe Users" groupTypeEnumId="UgtStripe"></userGroups>
+    <!-- Root screen (no inherit) and general screens group, for all non-admin user groups -->
+    <artifactGroups artifactGroupId="StripeApp" description="Stripe App Access">
+        <artifacts artifactName="component://stripe/screen/Payment.xml" artifactTypeEnumId="AT_XML_SCREEN" inheritAuthz="Y"/>
+        <authz artifactAuthzId="STRIPE_ADMIN" userGroupId="ADMIN" authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+        <authz artifactAuthzId="STRIPE" userGroupId="STRIPE_USERS" authzTypeEnumId="AUTHZT_ALWAYS" authzActionEnumId="AUTHZA_ALL"/>
+    </artifactGroups>
 
 </entity-facade-xml>

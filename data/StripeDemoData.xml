@@ -13,7 +13,7 @@ along with this software (see the LICENSE.md file). If not, see
 <http://creativecommons.org/publicdomain/zero/1.0/>.
 -->
 <entity-facade-xml type="demo">
-    <!-- Demo data -->
+    <!-- Stripe Demo data -->
 
     <!-- TODO: Configure this here: http://localhost:8080/qapps/system/SystemMessage/Remote/MessageRemoteDetail?systemMessageRemoteId=DemoStripe
      SystemMessageRemote needs the publicKey to be the stripe publishable key and the privateKey to be the stripe secret key -->
@@ -25,5 +25,8 @@ along with this software (see the LICENSE.md file). If not, see
         <!-- Set up the payment gateway for the product store -->
         <mantle.product.store.ProductStorePaymentGateway paymentInstrumentEnumId="PiStripe" paymentGatewayConfigId="DemoStripe"/>
     </productStores>
+
+    <!-- General Demo Data -->
+
 
 </entity-facade-xml>
