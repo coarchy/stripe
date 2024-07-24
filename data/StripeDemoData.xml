@@ -21,7 +21,7 @@ along with this software (see the LICENSE.md file). If not, see
     <mantle.account.method.PaymentGatewayConfig paymentGatewayConfigId="DemoStripe" paymentGatewayTypeEnumId="PgtStripe" description="Stripe Demo Payment Gateway" systemMessageRemoteId="DemoStripe"
             authorizeServiceName="stripe.StripeServices.authorizeAndCapture#Payment"
             captureServiceName="stripe.StripeServices.capture#Payment"/>
-    <productStores productStoreId="coarchy" systemMessageRemoteId="DemoStripe">
+    <productStores productStoreId="DemoProductStore" systemMessageRemoteId="DemoStripe">
         <!-- Set up the payment gateway for the product store -->
         <mantle.product.store.ProductStorePaymentGateway paymentInstrumentEnumId="PiStripe" paymentGatewayConfigId="DemoStripe"/>
     </productStores>

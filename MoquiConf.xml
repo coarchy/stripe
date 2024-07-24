@@ -1,27 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!-- No copyright or license for configuration file, details here are not considered a creative work. -->
 <moqui-conf xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/moqui-conf-3.xsd">
-    <screen-facade>
-        <screen location="component://webroot/screen/webroot.xml" default-subscreen="c">
-            <!-- Public Ecommerce App -->
-            <subscreens-item name="settings" menu-include="false" location="component://coarchy/screen/settings/settings.xml"/>
-            <subscreens-item name="settingsinternal" menu-include="false" location="component://coarchy/screen/settings/settingsinternal.xml"/>
-            <subscreens-item name="settingsstatic" menu-include="false" location="component://coarchy/screen/settings/settingsstatic.xml"/>
-
-            <!-- Public Website -->
-            <subscreens-item name="c" menu-include="false" no-sub-path="true" location="component://coarchy/screen/coarchy-com/c.xml"/>
-            <subscreens-item name="cstatic" menu-include="false" location="component://coarchy/screen/coarchy-com/cstatic.xml"/>
-
-            <!-- Coarchy Internal App -->
-            <subscreens-item name="coapp" menu-include="false" location="component://coarchy/screen/coarchy/coapp.xml"/>
-            <subscreens-item name="cointernal" menu-include="false" location="component://coarchy/screen/coarchy/cointernal.xml"/>
-            <subscreens-item name="costatic" menu-include="false" location="component://coarchy/screen/coarchy/costatic.xml"/>
-
-            <!-- Vendor App -->
-            <subscreens-item name="vendor" menu-include="false" location="component://coarchy/screen/vendor/vendor.xml"/>
-            <subscreens-item name="vendorinternal" menu-include="false" location="component://coarchy/screen/vendor/vendorinternal.xml"/>
-            <subscreens-item name="vendorstatic" menu-include="false" location="component://coarchy/screen/vendor/vendorstatic.xml"/>
-        </screen>
-
-    </screen-facade>
 </moqui-conf>
