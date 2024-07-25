@@ -53,10 +53,10 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <set field="orderHeaderAndPart" from="existingOrderList.getFirst()"/>
 
             <!-- TODO: If checkoutId already exists, update the checkout with the new order -->
-            <!-- payment_method_data:[allow_redisplay:'always'],saved_payment_method_options:[allow_redisplay_filters:'always'] -->
+            <!-- payment_intent_data:[setup_future_usage:'off_session'],payment_method_data:[allow_redisplay:'always'],saved_payment_method_options:[allow_redisplay_filters:'always'] -->
             <set field="stripeMap" from="[success_url:successUrl,mode:'payment',line_items:[],
-                customer_creation:'always',payment_intent_data:[setup_future_usage:'off_session'],
-                ]"/>
+                customer_creation:'always',payment_intent_data:[setup_future_usage:'off_session']
+            ]"/>
             <entity-find entity-name="mantle.order.OrderItem" list="orderItemList">
                 <econdition field-name="orderId"/>
                 <econdition field-name="orderPartSeqId" ignore-if-empty="true"/>
@@ -446,30 +446,11 @@ Otherwise, the payment unapplied total will be listed.</description>
                     <!--                <log level="warn" message="handle#Webhook paymentList.toString() ${paymentList.toString()}}"/>-->
 
                     <if condition="paymentList.size() == 0">
-                        <set field="latest_charge" from="messageObject.data.object.latest_charge"/>
-                        <if condition="!latest_charge">
-                            <return error="true" type="danger" message="No payment found for paymentRefNum ${messageObject.data.object.id}."/>
-                        </if>
                         <!-- Create a payment, customer, and payment method -->
-                        <script><![CDATA[
-                            org.moqui.util.RestClient chargeRestClient = ec.service.rest().method(org.moqui.util.RestClient.POST)
-                                    .basicAuth(systemMessage.remote.privateKey,"")
-                            def chargeUriBuilder = chargeRestClient.uri().protocol("https").host("api.stripe.com").port(443)
-                                    .path("/v1/charges/${latest_charge}")
-                            chargeUriBuilder.build()
-
-                            org.moqui.util.RestClient.RestResponse chargeRestResponse = chargeRestClient.call()
-                            context.chargeResponseMap = (Map) chargeRestResponse.jsonObject()
-//                            if (customerRestResponse.statusCode < 200 || customerRestResponse.statusCode >= 300) {
-//                                ec.logger.warn("Got status code ${customerRestResponse.statusCode} from Stripe on a create checkout session for the parameter '${customerResponseMap.error.type}' and message '${customerResponseMap.error.message}'")
-//                                ec.logger.warn("Could not create Checkout")
-//                                ec.message.addPublic("There has been a critical error. Contact support at support@thebizapi.com",org.moqui.context.MessageFacade.NotificationType.danger)
-//                                return
-//                            }
-                            ]]></script>
-                        <log level="warn" message="handle#Webhook chargeResponseMap ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(chargeResponseMap))}"/>
-
                         <set field="payment_method" from="messageObject.data.object.payment_method"/>
+                        <if condition="!payment_method">
+                            <return error="true" type="danger" message="No payment method found gatewayCimId ${payment_method}."/>
+                        </if>
                         <script><![CDATA[
                             org.moqui.util.RestClient paymentMethodRestClient = ec.service.rest().method(org.moqui.util.RestClient.POST)
                                     .basicAuth(systemMessage.remote.privateKey,"")
@@ -479,32 +460,52 @@ Otherwise, the payment unapplied total will be listed.</description>
 
                             org.moqui.util.RestClient.RestResponse paymentMethodRestResponse = paymentMethodRestClient.call()
                             context.paymentMethodResponseMap = (Map) paymentMethodRestResponse.jsonObject()
-//                            if (customerRestResponse.statusCode < 200 || customerRestResponse.statusCode >= 300) {
-//                                ec.logger.warn("Got status code ${customerRestResponse.statusCode} from Stripe on a create checkout session for the parameter '${customerResponseMap.error.type}' and message '${customerResponseMap.error.message}'")
-//                                ec.logger.warn("Could not create Checkout")
-//                                ec.message.addPublic("There has been a critical error. Contact support at support@thebizapi.com",org.moqui.context.MessageFacade.NotificationType.danger)
-//                                return
-//                            }
+                            if (paymentMethodRestResponse.statusCode < 200 || paymentMethodRestResponse.statusCode >= 300) {
+                                ec.logger.warn("Got status code ${paymentMethodRestResponse.statusCode} from Stripe on get payment method for the parameter '${paymentMethodResponseMap.error.type}' and message '${paymentMethodResponseMap.error.message}'")
+                                ec.logger.warn("Could not get payment method")
+                                ec.message.addPublic("There has been a critical error. Contact support at support@thebizapi.com",null)
+                                return
+                            }
                             ]]></script>
                         <log level="warn" message="handle#Webhook paymentMethodResponseMap ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(paymentMethodResponseMap))}"/>
 
-                        <set field="customer" from="messageObject.data.object.customer"/>
-                        <script><![CDATA[
-                            org.moqui.util.RestClient customerRestClient = ec.service.rest().method(org.moqui.util.RestClient.POST)
-                                    .basicAuth(systemMessage.remote.privateKey,"")
-                            def customerUriBuilder = customerRestClient.uri().protocol("https").host("api.stripe.com").port(443)
-                                    .path("/v1/customers/${customer}")
-                            customerUriBuilder.build()
+                        <!-- RIP: https://www.kalzumeus.com/2010/06/17/falsehoods-programmers-believe-about-names/ -->
+                        <!-- TODO: Consider using https://github.com/tupilabs/HumanNameParser.java/tree/master or something like: https://www.nameapi.org/en/demos/name-parser/ -->
+                        <set field="fullName" from="paymentMethodResponseMap.billing_details.name"/>
+                        <set field="matcher" from="(fullName =~ /(\S+)\s+(.*)/)"/>
+                        <if condition="matcher.matches()">
+                            <set field="firstName" from="matcher[0][1] ?: fullName"/>
+                            <set field="lastName" from="matcher[0][2] ?: fullName"/>
+                        </if>
+                        <entity-find entity-name="moqui.basic.Geo" list="countryGeoList" limit="1" cache="true">
+                            <econdition field-name="geoCodeAlpha2" from="paymentMethodResponseMap.billing_details.address.country"/>
+                        </entity-find>
+                        <service-call name="mantle.party.PartyServices.create#PersonCustomer" in-map="[createUserAccount:false,
+                            emailAddress:paymentMethodResponseMap.billing_details.email,
+                            firstName:firstName,
+                            lastName:lastName,
+                            toName:paymentMethodResponseMap.billing_details.name,
 
-                            org.moqui.util.RestClient.RestResponse customerRestResponse = customerRestClient.call()
-                            context.customerResponseMap = (Map) customerRestResponse.jsonObject()
-//                            if (customerRestResponse.statusCode < 200 || customerRestResponse.statusCode >= 300) {
-//                                ec.logger.warn("Got status code ${customerRestResponse.statusCode} from Stripe on a create checkout session for the parameter '${customerResponseMap.error.type}' and message '${customerResponseMap.error.message}'")
-//                                ec.logger.warn("Could not create Checkout")
-//                                ec.message.addPublic("There has been a critical error. Contact support at support@thebizapi.com",null)
-//                                return
-                            ]]></script>
-                        <log level="warn" message="handle#Webhook customerResponseMap ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(customerResponseMap))}"/>
+                            city:paymentMethodResponseMap.billing_details.address.city,
+                            countryGeoId:countryGeoList?.getFirst()?.geoId,
+                            address1:paymentMethodResponseMap.billing_details.address.line1,
+                            address2:paymentMethodResponseMap.billing_details.address.line2,
+                            postalCode:paymentMethodResponseMap.billing_details.address.postal_code,
+                            stateProvinceGeoId:paymentMethodResponseMap.billing_details.address.state,
+
+                            expireMonth:paymentMethodResponseMap.card.exp_month,
+                            expireYear:paymentMethodResponseMap.card.exp_year,
+                            cardNumberLookupHash:paymentMethodResponseMap.card.fingerprint,
+                            fromDate:new Timestamp(System.currentTimeMillis()),
+                            paymentGatewayConfigId:paymentGatewayConfigId,
+                            gatewayCimId:paymentMethodResponseMap.id
+                        ]" out-map="context"/>
+
+<!--                        <service-call name="mantle.order.OrderServices.add#OrderPartPayment" in-map="[orderId:orderHeaderAndPart.orderId,-->
+<!--                            orderPartSeqId:orderHeaderAndPart.orderPartSeqId,settlementTermId:'Immediate', paymentInstrumentEnumId:'PiStripe',-->
+<!--                            paymentGatewayConfigId:paymentGatewayConfigId,-->
+<!--                            entryDate:ec.user.nowTimestamp]" out-map="context"/>-->
+<!--                        <entity-find-one entity-name="mantle.account.payment.Payment" value-field="payment" auto-field-map="[paymentId:paymentId]"/>-->
                     </if>
                     <if condition="paymentList.size() &gt; 1"><message type="warning">Multiple payments found for paymentRefNum ${messageObject.data.object.id}. This should not happen.</message></if>
 
@@ -605,6 +606,5 @@ Otherwise, the payment unapplied total will be listed.</description>
             <set field="paymentGatewayResponseId" from="paymentGatewayResponseList.getFirst().paymentGatewayResponseId"/>
         </actions>
     </service>
-
 
 </services>

@@ -17,7 +17,8 @@ along with this software (see the LICENSE.md file). If not, see
 
     <!-- TODO: Configure this here: http://localhost:8080/qapps/system/SystemMessage/Remote/MessageRemoteDetail?systemMessageRemoteId=DemoStripe
      To send messages: SystemMessageRemote needs the publicKey to be the stripe publishable key and the privateKey to be the stripe secret key
-     To receive messages: SystemMessageRemote needs the shared secret set to the webhook https://docs.stripe.com/webhooks#register-webhook-api -->
+     To receive messages: SystemMessageRemote needs the shared secret set to the webhook https://docs.stripe.com/webhooks#register-webhook-api
+     For development run: stripe listen -forward-to localhost:8080/rest/sm/StripeWebhookEvent/DemoStripe -->
     <moqui.service.message.SystemMessageRemote systemMessageRemoteId="DemoStripe" description="Stripe Demo"
             authHeaderName="Stripe-Signature" messageAuthEnumId="SmatHmacSha256Timestamp"
             systemMessageTypeId="StripeWebhookEvent"/>
