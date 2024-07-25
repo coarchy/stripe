@@ -15,7 +15,8 @@ along with this software (see the LICENSE.md file). If not, see
 <entity-facade-xml type="seed">
 
     <!-- ========== Payment Gateway and System Message ========== -->
-    <moqui.service.message.SystemMessageType systemMessageTypeId="StripeWebhookEvent" consumeServiceName="stripe.StripeServices.consume#StripeWebhookEvent" description="Stripe Webhook Event"/>
+    <moqui.service.message.SystemMessageType systemMessageTypeId="StripeWebhookEvent"
+            consumeServiceName="stripe.StripeServices.consume#StripeWebhookEvent" description="Stripe Webhook Event"/>
     <moqui.basic.Enumeration description="Stripe" enumId="PgtStripe" enumTypeId="PaymentGatewayType"/>
 
     <!-- ========== Payment Method an Instrument ========== -->

@@ -16,9 +16,13 @@ along with this software (see the LICENSE.md file). If not, see
     <!-- Demo data -->
 
     <!-- TODO: Configure this here: http://localhost:8080/qapps/system/SystemMessage/Remote/MessageRemoteDetail?systemMessageRemoteId=DemoStripe
-     SystemMessageRemote needs the publicKey to be the stripe publishable key and the privateKey to be the stripe secret key -->
-    <moqui.service.message.SystemMessageRemote systemMessageRemoteId="DemoStripe" description="Stripe Demo" authHeaderName="Stripe-Signature" messageAuthEnumId="SmatHmacSha256Timestamp"/>
-    <mantle.account.method.PaymentGatewayConfig paymentGatewayConfigId="DemoStripe" paymentGatewayTypeEnumId="PgtStripe" description="Stripe Demo Payment Gateway" systemMessageRemoteId="DemoStripe"
+     To send messages: SystemMessageRemote needs the publicKey to be the stripe publishable key and the privateKey to be the stripe secret key
+     To receive messages: SystemMessageRemote needs the shared secret set to the webhook https://docs.stripe.com/webhooks#register-webhook-api -->
+    <moqui.service.message.SystemMessageRemote systemMessageRemoteId="DemoStripe" description="Stripe Demo"
+            authHeaderName="Stripe-Signature" messageAuthEnumId="SmatHmacSha256Timestamp"
+            systemMessageTypeId="StripeWebhookEvent"/>
+    <mantle.account.method.PaymentGatewayConfig paymentGatewayConfigId="DemoStripe" paymentGatewayTypeEnumId="PgtStripe"
+            description="Stripe Demo Payment Gateway" systemMessageRemoteId="DemoStripe"
             authorizeServiceName="stripe.StripeServices.authorizeAndCapture#Payment"
             captureServiceName="stripe.StripeServices.capture#Payment"/>
     <productStores productStoreId="DemoProductStore" systemMessageRemoteId="DemoStripe">
