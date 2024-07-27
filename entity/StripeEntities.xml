@@ -18,8 +18,8 @@ along with this software (see the LICENSE.md file). If not, see
     <!-- stripe & Related Entities -->
 
     <extend-entity entity-name="OrderPart" package="mantle.order">
-        <field name="checkoutId" type="id"/>
-        <field name="checkoutUrl" type="text-medium"/>
+        <field name="checkoutId" type="id-long" enable-audit-log="update"/>
+        <field name="checkoutUrl" type="text-intermediate" enable-audit-log="update"/>
     </extend-entity>
 
 </entities>
