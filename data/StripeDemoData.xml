@@ -29,6 +29,13 @@ along with this software (see the LICENSE.md file). If not, see
     <productStores productStoreId="DemoProductStore" systemMessageRemoteId="DemoStripe">
         <!-- Set up the payment gateway for the product store -->
         <mantle.product.store.ProductStorePaymentGateway paymentInstrumentEnumId="PiStripe" paymentGatewayConfigId="DemoStripe"/>
+        <!-- Only allowing blacklist because it has a problem with the mantle.party.DuplicateServices.find#PostalAddresses when there is no address1 field -->
+        <settings fromDate="1697159820000" settingValue="false" settingTypeEnumId="PsstOrdApproveContactBlacklist"/>
+        <!-- This will need to change when physical products are shipped -->
+        <settings fromDate="1697159820000" settingValue="false" settingTypeEnumId="PsstOrdApproveAddrMissing"/>
+        <!-- If is no shipping address this these will trigger which we do not want to happen -->
+        <settings fromDate="1697159880000" settingValue="false" settingTypeEnumId="PsstOrdApproveAddrNotValid"/>
+        <settings fromDate="1697159880000" settingValue="false" settingTypeEnumId="PsstOrdApproveBillShipAddrDiff"/>
     </productStores>
 
 </entity-facade-xml>
