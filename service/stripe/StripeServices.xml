@@ -22,6 +22,7 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <parameter name="orderId" required="true"/>
             <parameter name="orderPartSeqId"/>
             <parameter name="customerPartyId" default="ec.user.userAccount?.partyId"/>
+            <parameter name="cancelUrl" required="true" default-value="${ec.web.getWebappRootUrl(false,true)}"/>
             <parameter name="successUrl" required="true" default-value="${ec.web.getWebappRootUrl(false,true)}"/>
         </in-parameters>
         <out-parameters>
@@ -61,7 +62,7 @@ Only one Order Part is supported so that the customer party is clear.</descripti
 
             <!-- TODO: If checkoutId already exists, update the checkout with the new order -->
             <!-- payment_method_data:[allow_redisplay:'always'],saved_payment_method_options:[allow_redisplay_filters:'always',payment_method_save:'enabled'] -->
-            <set field="stripeMap" from="[success_url:successUrl,mode:'payment',line_items:[],
+            <set field="stripeMap" from="[success_url:successUrl,cancel_url:cancelUrl,mode:'payment',line_items:[],
                 customer_creation:'always',payment_intent_data:[setup_future_usage:'on_session']
             ]"/>
             <entity-find entity-name="mantle.order.OrderItem" list="orderItemList">
@@ -655,6 +656,9 @@ Otherwise, the payment unapplied total will be listed.</description>
                           resultBadCardNumber:'N']"/>
 
                 <service-call name="mantle.order.OrderServices.place#Order" in-map="[orderId:orderPart.orderId]"/>
+            </if>
+            <if condition="messageObject.type == 'checkout.session.expired'">
+                <log level="warn" message="handle#Webhook ${messageObject.type} ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(messageObject))}"/>
             </if>
         </actions>
     </service>
