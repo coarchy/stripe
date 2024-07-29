@@ -14,6 +14,15 @@ along with this software (see the LICENSE.md file). If not, see
 -->
 <secas xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-eca-3.xsd">
     <!-- Stripe Integration -->
+
+    <seca id="OrderPartCancelExpireStripeCheckoutSession" service="update#mantle.order.OrderPart" when="post-service">
+        <condition><expression>statusChanged &amp;&amp; statusId == 'OrderCancelled'</expression></condition>
+        <actions>
+            <service-call name="stripe.StripeServices.cancel#CheckoutFromSalesOrderPart" in-map="context"/>
+        </actions>
+    </seca>
+
+
 <!--    <seca id="OrderApprovedDepositFinancialAccount" service="update#mantle.order.OrderHeader" when="post-service">
         <condition><expression>statusChanged &amp;&amp; statusId == 'OrderApproved'</expression></condition>
         <actions><service-call name="example.services.deposit#OrderToFinancialAccount" in-map="context"/></actions>
