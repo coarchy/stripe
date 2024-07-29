@@ -212,7 +212,8 @@ Only one Order Part is supported so that the customer party is clear.</descripti
 
             <set field="orderPart" from="existingOrderPartList.getFirst()"/>
             <if condition="!orderPart.checkoutId">
-                <return message="Not cancelling checkout for order ${orderId} order part ${orderPart.orderPartSeqId} as there is no checkoutId."/>
+                <log level="warn" message="Not cancelling checkout for order ${orderId} order part ${orderPart.orderPartSeqId} as there is no checkoutId."/>
+                <return/>
             </if>
 
             <script><![CDATA[
