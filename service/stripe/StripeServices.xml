@@ -423,94 +423,18 @@ Otherwise, the payment unapplied total will be listed.</description>
 
             <entity-find entity-name="mantle.account.method.PaymentGatewayConfig" list="paymentGatewayConfigList" limit="1">
                 <econdition field-name="systemMessageRemoteId" from="systemMessage.systemMessageRemoteId"/>
-                <econdition field-name="paymentGatewayTypeEnumId" value="PgtStripe"/>
                 <order-by field-name="-lastUpdatedStamp"/>
             </entity-find>
             <set field="paymentGatewayConfig" from="paymentGatewayConfigList.getFirst()"/>
             <set field="paymentGatewayConfigId" from="paymentGatewayConfig.paymentGatewayConfigId"/>
+            <if condition="paymentGatewayConfig.paymentGatewayTypeEnumId != 'PgtStripe'">
+                <log level="warn" message="PaymentGatewayConfig ${paymentGatewayConfigId} is not a PgtStripe gateway"/>
+            </if>
 
             <set field="messageObject" from="ec.elastic.jsonToObject(systemMessage.messageText)"/>
 
-            <if condition="messageObject.object == 'event' &amp;&amp; messageObject.data.object.object == 'payment_intent'">
-<!--                <entity-find-one entity-name="mantle.account.payment.Payment" value-field="payment" auto-field-map="[paymentId:payment.paymentId]"/>-->
-<!--                <log level="warn" message="handle#Webhook payment.toString() ${payment.toString()}}"/>-->
-
-<!-- Don't do anything. There is nothing to do.                <if condition="messageObject.type == 'payment_intent.processing'">
-                    <service-call name="create#mantle.account.method.PaymentGatewayResponse" out-map="context" in-map="[
-                          paymentGatewayConfigId:paymentGatewayConfigId,
-                          paymentOperationEnumId:'PgoStoreCim',
-                          paymentId:payment.paymentId,
-                          paymentMethodId:payment.paymentMethodId,
-                          amount: (messageObject.data.object.amount as BigDecimal) / 100,
-                          amountUomId:messageObject.data.object.currency.toUpperCase(),
-                          finAccountId:payment.finAccountId,
-                          transactionDate:new Timestamp(messageObject.data.object.created * 1000L),
-                          referenceNum:messageObject.data.object.id,
-                          altReference:messageObject.request.idempotency_key,
-                          subReference:messageObject.id,
-                          resultSuccess:'N',
-                          resultDeclined:'N',
-                          resultError:'N',
-                          resultBadExpire:'N',
-                          resultBadCardNumber:'N']"/>
-                </if>-->
-                <!-- This event is considered when the payment is authorized and captured -->
-                <if condition="messageObject.type == 'payment_intent.succeeded'">
-<!--                    <log level="warn" message="handle#Webhook messageObject.toString() ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(messageObject))}"/>-->
-
-                    <!--                    <log level="warn" message="handle#Webhook messageObject.data.object.amount ${(messageObject.data.object.amount as BigDecimal)} : ${(messageObject.data.object.amount as BigDecimal).getClass()}}"/>-->
-
-
-                    <!--                <log level="warn" message="handle#Webhook messageObject.type ${messageObject.type}}"/>-->
-<!--                    <set field="payment" from="paymentList.getFirst()"/>-->
-
-
-
-
-
-<!--                    <service-call name="create#mantle.account.method.PaymentGatewayResponse" out-map="context" in-map="[-->
-<!--                          paymentGatewayConfigId:paymentGatewayConfigId,-->
-<!--                          paymentOperationEnumId:'PgoAuthAndCapture',-->
-<!--                          paymentId:payment?.paymentId,-->
-<!--                          paymentMethodId:payment?.paymentMethodId,-->
-<!--                          amount: (messageObject?.data?.object?.amount as BigDecimal) / 100,-->
-<!--                          amountUomId:messageObject?.data?.object?.currency?.toUpperCase(),-->
-<!--                          finAccountId:payment.finAccountId,-->
-<!--                          transactionDate:new Timestamp(messageObject?.data?.object?.created * 1000L),-->
-<!--                          referenceNum:messageObject?.data?.object?.id,-->
-<!--                          altReference:messageObject?.request?.idempotency_key,-->
-<!--                          subReference:messageObject?.id,-->
-<!--                          resultSuccess:'Y',-->
-<!--                          resultDeclined:'N',-->
-<!--                          resultError:'N',-->
-<!--                          resultBadExpire:'N',-->
-<!--                          resultBadCardNumber:'N']"/>-->
-
-<!--                    <service-call name="mantle.order.OrderServices.place#Order" in-map="[orderId:payment.orderId]"/>-->
-                </if>
-                <if condition="messageObject.type == 'payment_intent.payment_failed'">
-                    <service-call name="create#mantle.account.method.PaymentGatewayResponse" out-map="context" in-map="[
-                          paymentGatewayConfigId:paymentGatewayConfigId,
-                          paymentOperationEnumId:'PgoRelease',
-                          paymentId:payment.paymentId,
-                          paymentMethodId:payment.paymentMethodId,
-                          amount: (messageObject.data.object.amount as BigDecimal) / 100,
-                          amountUomId:messageObject.data.object.currency.toUpperCase(),
-                          finAccountId:payment.finAccountId,
-                          transactionDate:new Timestamp(messageObject.data.object.created * 1000L),
-                          referenceNum:messageObject.data.object.id,
-                          altReference:messageObject.request.idempotency_key,
-                          subReference:messageObject.id,
-                          resultSuccess:'N',
-                          resultDeclined:'Y',
-                          resultError:'N',
-                          resultBadExpire:'N',
-                          resultBadCardNumber:'N']"/>
-                </if>
-            </if>
-            <if condition="messageObject.type == 'checkout.session.completed'">
+            <if condition="messageObject.object == 'event' &amp;&amp; messageObject.data.object.object == 'checkout.session'">
                 <log level="warn" message="handle#Webhook ${messageObject.type} ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(messageObject))}"/>
-
                 <!-- Get order part from checkoutId -->
                 <entity-find entity-name="mantle.order.OrderPart" list="orderPartList" limit="2" for-update="true">
                     <econdition field-name="checkoutId" from="messageObject.data.object.id"/>
@@ -545,28 +469,34 @@ Otherwise, the payment unapplied total will be listed.</description>
                         <set field="firstName" from="fullName"/>
                         <set field="lastName" from="fullName"/>
                     </else></if>
-<!--                    <log level="warn" message="handle#Webhook fullName ${fullName} firstName ${firstName} lastName ${lastName}"/>-->
-                    <entity-find entity-name="moqui.basic.Geo" list="countryGeoList" limit="1" cache="true">
-                        <econdition field-name="geoCodeAlpha2" from="messageObject.data.object.customer_details.address.country"/>
-                    </entity-find>
+                    <if condition="!firstName || !lastName">
+                        <set field="firstName" value="No"/>
+                        <set field="lastName" value="Name"/>
+                    </if>
+                    <!--                    <log level="warn" message="handle#Webhook fullName ${fullName} firstName ${firstName} lastName ${lastName}"/>-->
+                    <if condition="messageObject.data.object.customer_details.address?.country">
+                        <entity-find entity-name="moqui.basic.Geo" list="countryGeoList" limit="1" cache="true">
+                            <econdition field-name="geoCodeAlpha2" from="messageObject.data.object.customer_details.address.country"/>
+                        </entity-find>
+                    </if>
                     <service-call name="mantle.party.PartyServices.create#PersonCustomer" in-map="[createUserAccount:false,
-                        emailAddress:messageObject.data.object.customer_details.email,
-                        firstName:firstName,
-                        lastName:lastName,
+                            emailAddress:messageObject.data.object.customer_details.email,
+                            firstName:firstName,
+                            lastName:lastName,
 
-                        toName:messageObject.data.object.customer_details.name,
-                        city:messageObject.data.object.customer_details.address.city,
-                        countryGeoId:countryGeoList?.getFirst()?.geoId,
-                        address1:messageObject.data.object.customer_details.address.line1,
-                        address2:messageObject.data.object.customer_details.address.line2,
-                        postalCode:messageObject.data.object.customer_details.address.postal_code,
-                        stateProvinceGeoId:messageObject.data.object.customer_details.address.state,
+                            toName:messageObject.data.object.customer_details.name,
+                            city:messageObject.data.object.customer_details.address?.city,
+                            countryGeoId:countryGeoList?.getFirst()?.geoId,
+                            address1:messageObject.data.object.customer_details.address?.line1,
+                            address2:messageObject.data.object.customer_details.address?.line2,
+                            postalCode:messageObject.data.object.customer_details.address?.postal_code,
+                            stateProvinceGeoId:messageObject.data.object.customer_details.address?.state,
 
-                        expireMonth:messageObject.data.object.customer_details.exp_month,
-                        expireYear:messageObject.data.object.customer_details.exp_year,
-                        cardNumberLookupHash:messageObject.data.object.customer_details.fingerprint,
-                        fromDate:new Timestamp(System.currentTimeMillis()),
-                    ]" out-map="context"/>
+                            expireMonth:messageObject.data.object.customer_details.exp_month,
+                            expireYear:messageObject.data.object.customer_details.exp_year,
+                            cardNumberLookupHash:messageObject.data.object.customer_details.fingerprint,
+                            fromDate:new Timestamp(System.currentTimeMillis()),
+                        ]" out-map="context"/>
                 </if>
                 <if condition="!partyId">
                     <return error="true" type="danger" message="No party found or able to create for customer."/>
@@ -576,9 +506,12 @@ Otherwise, the payment unapplied total will be listed.</description>
 
                 <entity-find-one entity-name="mantle.party.contact.ContactMech" value-field="postalContactMech"
                         auto-field-map="[contactMechId:postalContactMechId]" for-update="true"/>
-                <!-- this is verified through stripe see: https://stripe.com/resources/more/what-is-address-verification-service#how-to-start-using-address-verification-service and https://docs.stripe.com/disputes/prevention/verification -->
-                <set field="postalContactMech.trustLevelEnumId" value="CmtlVerified"/>
-                <entity-update value-field="postalContactMech"/>
+                <!-- If there is an error in the stripe checkout a postal contact mech may not be created -->
+                <if condition="postalContactMech">
+                    <!-- this is verified through stripe see: https://stripe.com/resources/more/what-is-address-verification-service#how-to-start-using-address-verification-service and https://docs.stripe.com/disputes/prevention/verification -->
+                    <set field="postalContactMech.trustLevelEnumId" value="CmtlVerified"/>
+                    <entity-update value-field="postalContactMech"/>
+                </if>
 
                 <if condition="!paymentMethodId">
                     <if condition="!messageObject.data.object.payment_intent">
@@ -608,21 +541,21 @@ Otherwise, the payment unapplied total will be listed.</description>
                         <date-filter/></entity-find>
                     <if condition="paymentMethodList.size() == 0"><then>
                         <service-call name="create#mantle.account.method.PaymentMethod" out-map="context" in-map="[
-                        ownerPartyId:orderPart.customerPartyId,fromDate:ec.user.nowTimestamp,
-                        currencyUomId:messageObject.data.object.currency.toUpperCase(),
-                        gatewayCimId:paymentIntentResponseMap.payment_method,paymentGatewayConfigId:paymentGatewayConfigId,
-                        firstNameOnAccount:firstName,lastNameOnAccount:lastName,postalContactMechId:postalContactMechId,
-                        emailContactMechId:emailContactMechId]"/>
+                                ownerPartyId:orderPart.customerPartyId,fromDate:ec.user.nowTimestamp,
+                                currencyUomId:messageObject.data.object.currency.toUpperCase(),
+                                gatewayCimId:paymentIntentResponseMap.payment_method,paymentGatewayConfigId:paymentGatewayConfigId,
+                                firstNameOnAccount:firstName,lastNameOnAccount:lastName,postalContactMechId:postalContactMechId,
+                                emailContactMechId:emailContactMechId]"/>
                         <set field="paymentMethodId" from="paymentMethodId"/>
                     </then><else>
                         <if condition="paymentMethodList.size() &gt; 1">
                             <message type="warning">Multiple payment methods found for ownerPartyId ${orderPart.customerPartyId}, paymentGatewayConfigId ${paymentGatewayConfigId}, and gatewayCimId ${paymentIntentResponseMap.payment_method}.</message></if>
                         <service-call name="update#mantle.account.method.PaymentMethod" in-map="[
-                            paymentMethodId:paymentMethodList.getFirst().paymentMethodId,
-                            ownerPartyId:orderPart.customerPartyId,fromDate:ec.user.nowTimestamp,
-                            currencyUomId:messageObject.data.object.currency.toUpperCase(),
-                            gatewayCimId:paymentIntentResponseMap.payment_method,
-                            paymentGatewayConfigId:paymentGatewayConfigId]"/>
+                                paymentMethodId:paymentMethodList.getFirst().paymentMethodId,
+                                ownerPartyId:orderPart.customerPartyId,fromDate:ec.user.nowTimestamp,
+                                currencyUomId:messageObject.data.object.currency.toUpperCase(),
+                                gatewayCimId:paymentIntentResponseMap.payment_method,
+                                paymentGatewayConfigId:paymentGatewayConfigId]"/>
                         <set field="paymentMethodId" from="paymentMethodId"/>
                     </else></if>
                 </if>
@@ -631,34 +564,67 @@ Otherwise, the payment unapplied total will be listed.</description>
                 </if>
 
                 <service-call name="mantle.order.OrderServices.add#OrderPartPayment" in-map="[
-                    orderId:orderPart.orderId,orderPartSeqId:orderPart.orderPartSeqId,
-                    settlementTermId:'Immediate', paymentInstrumentEnumId:'PiStripe',paymentGatewayConfigId:paymentGatewayConfigId,
-                    entryDate:ec.user.nowTimestamp, paymentRefNum:messageObject.data.object.payment_intent,paymentMethodId:paymentMethodId]" out-map="context"/>
-                <entity-find-one entity-name="mantle.account.payment.Payment" value-field="payment" auto-field-map="[paymentId:paymentId]"/>
-<!--                <log level="warn" message="handle#Webhook payment.toString() ${payment.toString()}"/>-->
+                        orderId:orderPart.orderId,orderPartSeqId:orderPart.orderPartSeqId,
+                        settlementTermId:'Immediate', paymentInstrumentEnumId:'PiStripe',paymentGatewayConfigId:paymentGatewayConfigId,
+                        entryDate:ec.user.nowTimestamp, paymentRefNum:messageObject.data.object.payment_intent,paymentMethodId:paymentMethodId]" out-map="context"/>
+                <entity-find-one entity-name="mantle.account.payment.Payment" value-field="payment" auto-field-map="[paymentId:paymentId]" for-update="true"/>
+                <!--                <log level="warn" message="handle#Webhook payment.toString() ${payment.toString()}"/>-->
 
-                <service-call name="create#mantle.account.method.PaymentGatewayResponse" out-map="context" in-map="[
-                          paymentGatewayConfigId:paymentGatewayConfigId,
-                          paymentOperationEnumId:'PgoAuthAndCapture',
-                          paymentId:payment.paymentId,
-                          paymentMethodId:payment.paymentMethodId,
-                          amount: (messageObject.data.object.amount_total as BigDecimal) / 100,
-                          amountUomId:messageObject.data.object.currency.toUpperCase(),
-                          finAccountId:payment.finAccountId,
-                          transactionDate:new Timestamp(messageObject.data.object.created * 1000L),
-                          referenceNum:messageObject.data.object.payment_intent,
-                          altReference:messageObject.request.idempotency_key,
-                          subReference:messageObject.id,
-                          resultSuccess:'Y',
-                          resultDeclined:'N',
-                          resultError:'N',
-                          resultBadExpire:'N',
-                          resultBadCardNumber:'N']"/>
+                <if condition="messageObject.type == 'checkout.session.completed'">
+                    <entity-find entity-name="mantle.account.method.PaymentGatewayResponse" list="paymentGatewayResponseList">
+                        <econdition field-name="referenceNum" from="messageObject.id"/>
+                        <order-by field-name="-transactionDate"/></entity-find>
+                    <service-call name="store#mantle.account.method.PaymentGatewayResponse" out-map="context" in-map="[
+                        paymentGatewayResponseId:paymentGatewayResponseList.getFirst()?.paymentGatewayResponseId,
+                        paymentGatewayConfigId:paymentGatewayConfigId,
+                        paymentOperationEnumId:'PgoAuthAndCapture',
+                        paymentId:payment.paymentId,
+                        paymentMethodId:payment.paymentMethodId,
+                        amount: (messageObject.data.object.amount_total as BigDecimal) / 100,
+                        amountUomId:messageObject.data.object.currency.toUpperCase(),
+                        finAccountId:payment.finAccountId,
+                        transactionDate:new Timestamp(messageObject.data.object.created * 1000L),
+                        referenceNum:messageObject.id,
+                        altReference:messageObject.request.idempotency_key,
+                        subReference:messageObject.data.object.payment_intent,
+                        resultSuccess:'Y',
+                        resultDeclined:'N',
+                        resultError:'N',
+                        resultBadExpire:'N',
+                        resultBadCardNumber:'N']"/>
 
-                <service-call name="mantle.order.OrderServices.place#Order" in-map="[orderId:orderPart.orderId]"/>
-            </if>
-            <if condition="messageObject.type == 'checkout.session.expired'">
-                <log level="warn" message="handle#Webhook ${messageObject.type} ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(messageObject))}"/>
+                    <service-call name="mantle.order.OrderServices.place#Order" in-map="[orderId:orderPart.orderId]"/>
+                </if>
+                <if condition="messageObject.type == 'checkout.session.expired'">
+                    <entity-find entity-name="mantle.account.method.PaymentGatewayResponse" list="paymentGatewayResponseList">
+                        <econdition field-name="referenceNum" from="messageObject.id"/>
+                        <order-by field-name="-transactionDate"/></entity-find>
+                    <service-call name="store#mantle.account.method.PaymentGatewayResponse" out-map="context" in-map="[
+                        paymentGatewayResponseId:paymentGatewayResponseList.getFirst()?.paymentGatewayResponseId,
+                        paymentGatewayConfigId:paymentGatewayConfigId,
+                        paymentOperationEnumId:'PgoRelease',
+                        paymentId:payment.paymentId,
+                        paymentMethodId:payment.paymentMethodId,
+                        amount: (messageObject.data.object.amount_total as BigDecimal) / 100,
+                        amountUomId:messageObject.data.object.currency.toUpperCase(),
+                        finAccountId:payment.finAccountId,
+                        transactionDate:new Timestamp(messageObject.data.object.created * 1000L),
+                        referenceNum:messageObject.id,
+                        altReference:messageObject.request.idempotency_key,
+                        subReference:messageObject.data.object.payment_intent,
+                        resultSuccess:'N',
+                        resultDeclined:'Y',
+                        resultError:'N',
+                        resultBadExpire:'Y',
+                        resultBadCardNumber:'N']"/>
+
+                    <set field="payment.statusId" value="PmntCancelled"/>
+                    <entity-update value-field="payment"/>
+
+                    <if condition="orderPart.statusId != 'OrderRejected'">
+                        <service-call name="mantle.order.OrderServices.reject#OrderPart" in-map="[orderId:orderPart.orderId,orderPartSeqId:orderPart.orderPartSeqId]"/>
+                    </if>
+                </if>
             </if>
         </actions>
     </service>
