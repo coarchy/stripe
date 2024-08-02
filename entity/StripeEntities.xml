@@ -21,5 +21,9 @@ along with this software (see the LICENSE.md file). If not, see
         <field name="checkoutId" type="id-long" enable-audit-log="update"/>
         <field name="checkoutUrl" type="text-intermediate" enable-audit-log="update"/>
     </extend-entity>
+    <extend-entity entity-name="PartyIdentification" package="mantle.party">
+        <!-- If there is a problem with the stripe customer id, it may override the existing one. For keeping track of the stripe customer id associated with a party we keep track of the values over time -->
+        <field name="idValue" enable-audit-log="update"/>
+    </extend-entity>
 
 </entities>
