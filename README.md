@@ -55,3 +55,14 @@ If the User is in the Stripe Checkout screen, Stripe should redirect to your cus
 ### Limitations
 - stripe is a big set of products, but we only use a very tiny subset of them here
 - at the moment no vaulting functionality for a customer service agent entering information on behalf of a customer
+
+### Useful Resources
+#### [Stripe CLI Commands](https://docs.stripe.com/stripe-cli)
+stripe listen --forward-to kinginsuranceagency.localhost:8080/rest/sm/StripeWebhookEvent/DemoStripe
+stripe listen --events checkout.session.completed,checkout.session.expired --forward-to kinginsuranceagency.localhost:8080/rest/sm/StripeWebhookEvent/DemoStripe
+stripe events resend evt_1PH9HU2eZvKYlo2CrSrLx8y1
+
+#### Credit Card Testing
+See:https://docs.stripe.com/testing#declined-payments
+Succeed: 4242424242424242
+Fail: 4000000000000002
