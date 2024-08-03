@@ -1,4 +1,4 @@
-# Stripe for Mantle
+# Easy Stripe Component for Mantle
 A Stripe component closely integrated with Mantle and Moqui and has no dependency on the Stripe SDK.
 
 ## What you need to know:
