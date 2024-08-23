@@ -38,6 +38,7 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <!-- TODO: Handle ProductStores as a configuration for paymentGatewayConfig? -->
             <entity-find entity-name="mantle.order.OrderHeaderAndPart" list="existingOrderList" limit="2">
                 <econdition field-name="orderId"/>
+                <econdition field-name="orderPartSeqId" ignore="!orderPartSeqId"/>
                 <econdition field-name="customerPartyId" ignore="!customerPartyId"/>
                 <order-by field-name="-entryDate"/></entity-find>
             <if condition="!existingOrderList.getFirst()">
