@@ -2,7 +2,9 @@ Here is an easy Stripe component for Moqui: https://github.com/coarchy/stripe
 
 ## What you need to know:
 - Uses [Stripe Checkout](https://stripe.com/payments/checkout) to gather payment information and the payment from the user.
-- To work properly: Requires [mantle-usl](https://github.com/moqui/mantle-usl) commit [`8503eed`](https://github.com/moqui/mantle-usl/commit/8503eeda6bfb7ee8c3207a4fda61487fc42895a7) or later
+- Requires to work properly:
+  - [mantle-usl](https://github.com/moqui/mantle-usl) commit [`8503eed`](https://github.com/moqui/mantle-usl/commit/8503eeda6bfb7ee8c3207a4fda61487fc42895a7) or later
+  - [moqui-framework](https://github.com/moqui/moqui-framework) commit [`d677e40`](https://github.com/moqui/moqui-framework/commit/d677e40c14e7a93b10eefed245e582ae3bad6e5d)
 
 ### Usage
 ```Note: Can be used with a party logged in or from a guest checkout perspective properly.```
