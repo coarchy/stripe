@@ -23,8 +23,8 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <parameter name="orderId" required="true"/>
             <parameter name="orderPartSeqId"/>
             <parameter name="customerPartyId" default="ec.user.userAccount?.partyId"/>
-            <parameter name="successUrl" required="true" default-value="${ec.web.getWebappRootUrl(false,true)}"/>
-            <parameter name="cancelUrl" required="true" default-value="${ec.web.getWebappRootUrl(false,true)}"/>
+            <parameter name="successUrl" required="true" default-value="${ec.web.getWebappRootUrl(false,true)}"><text-url/></parameter>
+            <parameter name="cancelUrl" required="true" default-value="${ec.web.getWebappRootUrl(false,true)}"><text-url/></parameter>
             <parameter name="setup_future_usage" required="true" default-value="on_session"><description>
                 Setup future usage for the PaymentIntent. One of on_session or off_session. Default is on_session. See: https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-payment_intent_data-setup_future_usage
             </description></parameter>
@@ -84,7 +84,6 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                     </if>
                 </if>
             </if>
-            <log level="warn" message="customer ${customer} customer_email ${customer_email}"/>
 
             <!-- payment_method_data:[allow_redisplay:'always'],saved_payment_method_options:[allow_redisplay_filters:'always',payment_method_save:'enabled'] -->
             <set field="stripeMap" from="[success_url:successUrl,cancel_url:cancelUrl,mode:'payment',line_items:[],
@@ -164,8 +163,8 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                     org.moqui.util.RestClient.RestResponse checkoutItemsRestResponse = checkoutItemsRestClient.call()
                     context.checkoutItemsResponseMap = (Map) checkoutItemsRestResponse.jsonObject()
                     if (checkoutItemsRestResponse.statusCode < 200 || checkoutItemsRestResponse.statusCode >= 300) {
-                        ec.logger.warn("Got status code ${checkoutItemsRestResponse.statusCode} from Stripe on a create checkout session for the parameter '${checkoutItemsResponseMap.error.type}' and message '${checkoutItemsResponseMap.error.message}'")
                         ec.logger.warn("Could not create Checkout")
+                        throw new org.moqui.BaseException("Got status code ${checkoutItemsRestResponse.statusCode} from Stripe on a create checkout session for the parameter '${checkoutItemsResponseMap.error.type}' and message '${checkoutItemsResponseMap.error.message}'")
                         return
                     }
                     ]]></script>
@@ -206,8 +205,8 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                 org.moqui.util.RestClient.RestResponse checkoutSessionRestResponse = checkoutSessionRestClient.call()
                 context.checkoutSessionResponseMap = (Map) checkoutSessionRestResponse.jsonObject()
                 if (checkoutSessionRestResponse.statusCode < 200 || checkoutSessionRestResponse.statusCode >= 300) {
-                    ec.logger.warn("Got status code ${checkoutSessionRestResponse.statusCode} from Stripe on a create checkout session for the parameter '${checkoutSessionResponseMap.error.type}' and message '${checkoutSessionResponseMap.error.message}'")
                     ec.logger.warn("Could not create Checkout")
+                    throw new org.moqui.BaseException("Got status code ${checkoutSessionRestResponse.statusCode} from Stripe on a create checkout session for the parameter '${checkoutSessionResponseMap.error.type}' and message '${checkoutSessionResponseMap.error.message}'")
                     return
                 }
                 ]]></script>
@@ -262,8 +261,8 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                 org.moqui.util.RestClient.RestResponse cancelCheckoutSessionRestResponse = cancelCheckoutSessionRestClient.call()
                 context.cancelCheckoutSessionResponseMap = (Map) cancelCheckoutSessionRestResponse.jsonObject()
                 if (cancelCheckoutSessionRestResponse.statusCode < 200 || cancelCheckoutSessionRestResponse.statusCode >= 300) {
-                    ec.logger.warn("Got status code ${cancelCheckoutSessionRestResponse.statusCode} from Stripe on a create checkout session for the parameter '${cancelCheckoutSessionResponseMap.error.type}' and message '${cancelCheckoutSessionResponseMap.error.message}'")
                     ec.logger.warn("Could not create Checkout")
+                    throw new org.moqui.BaseException("Got status code ${cancelCheckoutSessionRestResponse.statusCode} from Stripe on a create checkout session for the parameter '${cancelCheckoutSessionResponseMap.error.type}' and message '${cancelCheckoutSessionResponseMap.error.message}'")
                     return
                 }
                 ]]></script>
@@ -298,7 +297,6 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <set field="messageObject" from="ec.elastic.jsonToObject(systemMessage.messageText)"/>
 
             <if condition="messageObject.object == 'event' &amp;&amp; messageObject.data.object.object == 'checkout.session'">
-                <log level="warn" message="handle#Webhook ${messageObject.type} ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(messageObject))}"/>
                 <!-- Get order part from checkoutId -->
                 <entity-find entity-name="mantle.order.OrderPart" list="orderPartList" limit="2" for-update="true">
                     <econdition field-name="checkoutId" from="messageObject.data.object.id"/>
@@ -364,7 +362,6 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                 <if condition="!partyId &amp;&amp; identificationPartyId">
                     <set field="partyId" from="identificationPartyId"/>
                 </if>
-                <log level="warn" message="partyId ${partyId} identificationPartyId ${identificationPartyId}"/>
                 <if condition="partyId &amp;&amp; !identificationPartyId">
                     <service-call name="create#mantle.party.PartyIdentification" in-map="[partyId:partyId,
                         partyIdTypeEnumId:'PtidSci',idValue:messageObject.data.object.customer]"/>
@@ -421,12 +418,11 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                     org.moqui.util.RestClient.RestResponse paymentIntentRestResponse = paymentIntentRestClient.call()
                     context.paymentIntentResponseMap = (Map) paymentIntentRestResponse.jsonObject()
                     if (paymentIntentRestResponse.statusCode < 200 || paymentIntentRestResponse.statusCode >= 300) {
-                        ec.logger.warn("Got status code ${paymentIntentRestResponse.statusCode} from Stripe on a get payment intent for the parameter '${paymentIntentResponseMap.error.type}' and message '${paymentIntentResponseMap.error.message}'")
                         ec.logger.warn("Could not get payment intent")
+                        throw new org.moqui.BaseException("Got status code ${paymentIntentRestResponse.statusCode} from Stripe on a get payment intent for the parameter '${paymentIntentResponseMap.error.type}' and message '${paymentIntentResponseMap.error.message}'")
                         return
                     }
                     ]]></script>
-                <log level="warn" message="paymentIntentResponseMap ${groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(paymentIntentResponseMap))}"/>
                 <if condition="paymentIntentResponseMap.customer &amp;&amp; messageObject.data.object.customer &amp;&amp; paymentIntentResponseMap.customer != messageObject.data.object.customer">
                     <return type="danger" error="true" message="The customer on the payment intent ${paymentIntentResponseMap.customer} does not match the customer on the checkout session ${messageObject.data.object.customer}."/>
                 </if>
@@ -657,8 +653,8 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                         org.moqui.util.RestClient.RestResponse paymentIntentRestResponse = paymentIntentRestClient.call()
                         context.paymentIntentResponseMap = (Map) paymentIntentRestResponse.jsonObject()
                         if (paymentIntentRestResponse.statusCode < 200 || paymentIntentRestResponse.statusCode >= 300) {
-                            ec.logger.warn("Got status code ${paymentIntentRestResponse.statusCode} from Stripe on a get payment intent for the parameter '${paymentIntentResponseMap.error.type}' and message '${paymentIntentResponseMap.error.message}'")
                             ec.logger.warn("Could not get payment intent")
+                            throw new org.moqui.BaseException("Got status code ${paymentIntentRestResponse.statusCode} from Stripe on a get payment intent for the parameter '${paymentIntentResponseMap.error.type}' and message '${paymentIntentResponseMap.error.message}'")
                             return
                         }
                         ]]></script>
@@ -699,7 +695,6 @@ Only one Order Part is supported so that the customer party is clear.</descripti
 
                     <set field="trustLevelEnumId" value="CmtlVerified"/>
 
-                    <log level="warn" message="consume#CheckoutSessionCompleted paymentMethodId ${paymentMethodId}"/>
                     <if condition="paymentMethodId"><then>
                         <!-- if update (paymentMethodId) and main field for type specified then update it -->
                         <service-call name="mantle.party.ContactServices.store#PartyContactInfo" in-map="context" out-map="context"/>
@@ -729,11 +724,9 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                     <if condition="paymentMethodId"><then>
                         <service-call name="update#mantle.account.method.PaymentMethod" out-map="context"
                                 in-map="context+[ownerPartyId:orderPart.customerPartyId]"/>
-                        <log level="warn" message="consume#CheckoutSessionCompleted update paymentMethodId ${paymentMethodId}"/>
                     </then><else>
                         <service-call name="create#mantle.account.method.PaymentMethod" out-map="context"
                                 in-map="context+[ownerPartyId:orderPart.customerPartyId]"/>
-                        <log level="warn" message="consume#CheckoutSessionCompleted create paymentMethodId ${paymentMethodId}"/>
                     </else></if>
 
                     <!-- If there is an error in the stripe checkout a postal contact mech may not be created -->
