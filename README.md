@@ -1,4 +1,4 @@
-Here is an easy Stripe component for Moqui: https://github.com/coarchy/stripe
+This is an Easy Stripe component for Moqui
 
 ## What you need to know:
 - Uses [Stripe Checkout](https://stripe.com/payments/checkout) to gather payment information and the payment from the user.
