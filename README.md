@@ -23,8 +23,8 @@ call stripe.StripeServices.create#CheckoutFromSalesOrder with the order, and **y
 ### **You** are responsible for: 
 - Setting up the stripe account with your business profile and tax information
 - Receive payouts from Stripe
-- Inserting publishable key, secret key, and shared secret from the stripe dashboard to your SystemMessageRemote see: https://github.com/coarchy/stripe/blob/bf9d4610c0c7d560d4c3df6561a7d30e669ed341/data/StripeDemoData.xml#L18
-- Creating a `checkout.session.completed` and `checkout.session.expired` to be added to the webhook configuration screen in Stripe for production [here](https://dashboard.stripe.com/webhooks/create) to `yourdomain.com/rest/sm/StripeWebhookEvent/YourProductionStripeSystemMessageRemoteId` 
+- Inserting publishable key, secret key from the stripe dashboard to your SystemMessageRemote see: https://github.com/coarchy/stripe/blob/bf9d4610c0c7d560d4c3df6561a7d30e669ed341/data/StripeDemoData.xml#L18
+- Creating a `checkout.session.completed` and `checkout.session.expired` to be added to the webhook configuration screen in Stripe for production [here](https://dashboard.stripe.com/webhooks/create) to `yourdomain.com/rest/sm/StripeWebhookEvent/YourProductionStripeSystemMessageRemoteId`  and adding the webhook signing secret as the shared secret to your SystemMessageRemote
 - Create a PaymentGatewayConfig calling the stripe services see: https://github.com/coarchy/stripe/blob/bf9d4610c0c7d560d4c3df6561a7d30e669ed341/data/StripeDemoData.xml#L25C28-L25C48
 - Create a ProductStore attached to the PaymentGatewayConfig with appropriate settings for approving Orders see: https://github.com/coarchy/stripe/blob/bf9d4610c0c7d560d4c3df6561a7d30e669ed341/data/StripeDemoData.xml#L29
 - Create products that are part of the ProductStore with Prices
