@@ -23,8 +23,8 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <parameter name="orderId" required="true"/>
             <parameter name="orderPartSeqId"/>
             <parameter name="customerPartyId" default="ec.user.userAccount?.partyId"/>
-            <parameter name="successUrl" required="true" default-value="${ec.web.getWebappRootUrl(false,true)}"><text-url/></parameter>
-            <parameter name="cancelUrl" required="true" default-value="${ec.web.getWebappRootUrl(false,true)}"><text-url/></parameter>
+            <parameter name="successUrl" required="true" default-value="${ec.web?.getWebappRootUrl(false,true)}"><text-url/></parameter>
+            <parameter name="cancelUrl" required="true" default-value="${ec.web?.getWebappRootUrl(false,true)}"><text-url/></parameter>
             <parameter name="setup_future_usage" required="true" default-value="on_session"><description>
                 Setup future usage for the PaymentIntent. One of on_session or off_session. Default is on_session. See: https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-payment_intent_data-setup_future_usage
             </description></parameter>
@@ -145,7 +145,15 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             </if>
 
             <entity-find-one entity-name="mantle.account.method.PaymentGatewayConfig" value-field="paymentGateway" auto-field-map="[paymentGatewayConfigId:paymentGatewayConfigId]"/>
-            <set field="stripeRemote" from="paymentGateway.remote"/>
+            <if condition="!paymentGateway">
+                <return error="true" type="danger" message="No PaymentGatewayConfig found for paymentGatewayConfigId ${paymentGatewayConfigId}"/>
+            </if>
+            <if condition="paymentGateway.systemMessageRemoteId">
+                <entity-find-one entity-name="moqui.service.message.SystemMessageRemote" value-field="stripeRemote" auto-field-map="[systemMessageRemoteId:paymentGateway.systemMessageRemoteId]"/>
+            </if>
+            <if condition="!stripeRemote">
+                <return error="true" type="danger" message="No SystemMessageRemote found for PaymentGatewayConfig ${paymentGatewayConfigId}"/>
+            </if>
 
             <if condition="!stripeRemote.privateKey || !stripeRemote.publicKey || !stripeRemote.sharedSecret">
                 <return error="true" type="danger" message="No ${!stripeRemote.privateKey?'private key':''} ${!stripeRemote.publicKey?'public key':''} ${!stripeRemote.sharedSecret?'shared secret':''} found for SystemMessageRemote ${stripeRemote.systemMessageRemoteId}. Go to ${ec.web.getWebappRootUrl(false,true)}/qapps/system/SystemMessage/Remote/MessageRemoteDetail?systemMessageRemoteId=${stripeRemote.systemMessageRemoteId} from https://dashboard.stripe.com/${'production'!=System.getProperty('instance_purpose') ? 'test/' : '' }apikeys"/>
