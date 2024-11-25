@@ -245,12 +245,15 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <entity-find entity-name="mantle.order.OrderPart" list="existingOrderPartList" limit="2">
                 <econdition field-name="orderId"/>
                 <econdition field-name="customerPartyId" ignore="!customerPartyId"/>
+                <econdition field-name="checkoutId" operator="is-not-null"/>
                 <order-by field-name="-entryDate"/></entity-find>
             <if condition="!existingOrderPartList.getFirst()">
-                <return error="true" type="danger" message="No order found for orderId ${orderId}."/>
+                <log level="warn" message="No order found for orderId ${orderId}."/>
+                <return message="No order found for orderId ${orderId}."/>
             </if>
             <if condition="existingOrderPartList.size() &gt;= 2">
-                <return error="true" type="danger" message="Cannot have multiple order parts for the customer party (party is optional)"/>
+                <log level="warn" message="Cannot have multiple order parts for the customer party (party is optional)"/>
+                <return message="Cannot have multiple order parts for the customer party (party is optional)"/>
             </if>
 
             <set field="orderPart" from="existingOrderPartList.getFirst()"/>
