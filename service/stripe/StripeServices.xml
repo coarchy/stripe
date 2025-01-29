@@ -23,8 +23,8 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <parameter name="orderId" required="true"/>
             <parameter name="orderPartSeqId"/>
             <parameter name="customerPartyId" default="ec.user.userAccount?.partyId"/>
-            <parameter name="successUrl" required="true" default-value="${ec.web?.getWebappRootUrl(false,true)}"><text-url/></parameter>
-            <parameter name="cancelUrl" required="true" default-value="${ec.web?.getWebappRootUrl(false,true)}"><text-url/></parameter>
+            <parameter name="successUrl" required="true" default-value="${ec.web?.getWebappRootUrl(false,true)}"></parameter>
+            <parameter name="cancelUrl" required="true" default-value="${ec.web?.getWebappRootUrl(false,true)}"></parameter>
             <parameter name="setup_future_usage" required="true" default-value="on_session"><description>
                 Setup future usage for the PaymentIntent. One of on_session or off_session. Default is on_session. See: https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-payment_intent_data-setup_future_usage
             </description></parameter>
@@ -460,7 +460,25 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                 <set field="address1" from="messageObject.data.object.customer_details.address?.line1?:' '"/>
                 <set field="address2" from="messageObject.data.object.customer_details.address?.line2"/>
                 <set field="postalCode" from="messageObject.data.object.customer_details.address?.postal_code"/>
-                <set field="stateProvinceGeoId" from="messageObject.data.object.customer_details.address?.state"/>
+                <set field="stateProvinceGeoId" from="null"/>
+                <log level="warn" message="handle#Webhook messageObject.data.object.customer_details?.address?.state ${messageObject.data.object.customer_details?.address?.state}"/>
+                <if condition="messageObject.data.object.customer_details.address?.state">
+                    <entity-find entity-name="moqui.basic.Geo" list="stateGeoList" cache="true">
+                        <econdition field-name="geoCodeAlpha2" from="messageObject.data.object.customer_details.address?.state"/>
+                    </entity-find>
+                    <if condition="stateGeoList.size() &gt; 1">
+                        <then>
+                            <entity-find entity-name="moqui.basic.GeoAssoc" list="stateGeoAssocList" cache="true">
+                                <econdition field-name="geoId" from="countryGeoId"/>
+                                <econdition field-name="toGeoId" operator="in" from="stateGeoList*.geoId"/>
+                            </entity-find>
+                            <set field="stateProvinceGeoId" from="stateGeoAssocList?.getFirst()?.toGeoId"/>
+                        </then>
+                        <else>
+                            <set field="stateProvinceGeoId" from="stateGeoList?.getFirst()?.geoId"/>
+                        </else>
+                    </if>
+                </if>
 
                 <set field="contactNumber" from="messageObject.data.object.customer_details.phone"/>
 
@@ -695,7 +713,24 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                     <set field="address1" from="messageObject.data.object.customer_details?.address?.line1?:' '"/>
                     <set field="address2" from="messageObject.data.object.customer_details?.address?.line2"/>
                     <set field="postalCode" from="messageObject.data.object.customer_details?.address?.postal_code"/>
-                    <set field="stateProvinceGeoId" from="messageObject.data.object.customer_details?.address?.state"/>
+                    <log level="warn" message="handle#Webhook messageObject.data.object.customer_details?.address?.state ${messageObject.data.object.customer_details?.address?.state}"/>
+                    <if condition="messageObject.data.object.customer_details?.address?.state">
+                        <entity-find entity-name="moqui.basic.Geo" list="stateGeoList" cache="true">
+                            <econdition field-name="geoCodeAlpha2" from="messageObject.data.object.customer_details?.address?.state"/>
+                        </entity-find>
+                        <if condition="stateGeoList.size() &gt; 1">
+                            <then>
+                                <entity-find entity-name="moqui.basic.GeoAssoc" list="stateGeoAssocList" cache="true">
+                                    <econdition field-name="geoId" from="countryGeoId"/>
+                                    <econdition field-name="toGeoId" operator="in" from="stateGeoList*.geoId"/>
+                                </entity-find>
+                                <set field="stateProvinceGeoId" from="stateGeoAssocList?.getFirst()?.toGeoId"/>
+                            </then>
+                            <else>
+                                <set field="stateProvinceGeoId" from="stateGeoList?.getFirst()?.geoId"/>
+                            </else>
+                        </if>
+                    </if>
 
                     <set field="contactNumber" from="messageObject.data.object.customer_details?.phone"/>
 
