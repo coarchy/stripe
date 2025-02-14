@@ -40,7 +40,7 @@ call stripe.StripeServices.create#CheckoutFromSalesOrder with the order, and **y
     - Webhook checkout.session.expired: stripe.StripeServices.consume#CheckoutSessionExpired
     - Service: stripe.StripeServices.create#CheckoutFromSalesOrder
     - Service: stripe.StripeServices.cancel#CheckoutFromSalesOrderPart
-  - Overriding the services by creating a file in compone://yourcomponent/service/stripe/StripeServices.xml with the same name as the service overriding
+  - Overriding the services by creating a file in component://yourcomponent/service/stripe/StripeServices.xml with the same name as the service overriding
 
 ### Things not considered:
 - Moqui Refunds (message me here for implementation: https://forum.moqui.org/u/michael/summary)
