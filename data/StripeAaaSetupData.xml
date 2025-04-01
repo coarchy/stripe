@@ -26,4 +26,13 @@ along with this software (see the LICENSE.md file). If not, see
     <!-- ========== Party Identification ========== -->
     <moqui.basic.Enumeration description="Stripe CIM Id" enumId="PtidSci" enumTypeId="PartyIdType"/>
 
+    <!-- ========== Service Registers ========== -->
+    <moqui.basic.Enumeration description="Stripe Service Register" enumId="StripeServiceRegister" enumTypeId="ServiceRegisterType"/>
+    <moqui.service.ServiceRegister serviceRegisterId="StripeCheckoutSuccess" serviceTypeEnumId="StripeServiceRegister"
+            description="Stripe Checkout Success"
+            serviceName="mantle.order.OrderServices.place#Order"/>
+    <moqui.service.ServiceRegister serviceRegisterId="StripeCheckoutExpired" serviceTypeEnumId="StripeServiceRegister"
+            description="Stripe Checkout Expired"
+            serviceName="stripe.StripeServices.reject#OrderPart"/>
+
 </entity-facade-xml>

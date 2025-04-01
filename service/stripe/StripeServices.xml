@@ -32,6 +32,7 @@ Only one Order Part is supported so that the customer party is clear.</descripti
         <out-parameters>
             <parameter name="checkoutId"/>
             <parameter name="checkoutUrl"/>
+            <parameter name="customer" default="null"/>
 <!-- This doesn't work as far as I can tell            <parameter name="customer"><description>Stripe customer Id. Can be used by guest checkout to find the partyId from PartyIdentification's idValue with a partyIdTypeEnumId of PtidSci and valid expireDate.</description></parameter>-->
         </out-parameters>
         <actions>
@@ -314,10 +315,10 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                     <order-by field-name="-lastUpdatedStamp,orderPartSeqId"/>
                 </entity-find>
                 <if condition="orderPartList.size() == 0">
-                    <return error="true" type="danger" message="No order part found for checkoutId ${messageObject.data.object.id}."/>
+                    <return error="true" type="danger" message="No order part found for checkoutId ${messageObject.data.object.id}"/>
                 </if>
                 <if condition="orderPartList.size() &gt;= 2">
-                    <log level="warn" message="Multiple order parts found for checkoutId ${messageObject.data.object.id}."/>
+                    <log level="warn" message="Multiple order parts found for checkoutId ${messageObject.data.object.id}"/>
                 </if>
                 <set field="orderPart" from="orderPartList.getFirst()"/>
 
@@ -340,10 +341,39 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <parameter name="orderPart" type="EntityValue"/>
         </in-parameters>
         <out-parameters>
+            <!-- Use these parameters for sending emails through a tx-commit seca -->
+            <parameter name="orderId"/>
+            <parameter name="orderPartSeqId"/>
+            <parameter name="partyId"/>
+            <parameter name="fullName"/>
+            <parameter name="firstName"/>
+            <parameter name="lastName"/>
+            <parameter name="countryGeoId"/>
+            <parameter name="address1"/>
+            <parameter name="address2"/>
+            <parameter name="postalCode"/>
+            <parameter name="city"/>
+            <parameter name="stateProvinceGeoId"/>
+            <parameter name="contactNumber"/>
+            <parameter name="emailAddress"/>
+            <parameter name="paymentMethodId"/>
+            <parameter name="paymentId"/>
+            <parameter name="amount" type="BigDecimal"/>
+            <parameter name="amountUomId"/>
+            <parameter name="transactionDate" type="Timestamp"/>
+            <parameter name="referenceNum"/>
+            <parameter name="altReference"/>
+            <parameter name="subReference"/>
+            <parameter name="paymentInstrumentEnumId"/>
         </out-parameters>
     </service>
     <service verb="consume" noun="CheckoutSessionCompleted">
         <implements service="stripe.StripeServices.consume#StripeWebhookEventInterface"/>
+        <in-parameters>
+            <parameter name="isTest" required="true" default="false"/>
+
+            <parameter name="paymentMethodId"/>
+        </in-parameters>
         <actions>
             <!-- Get partyId (required for a payment) -->
             <set field="partyId" from="orderPart.customerPartyId"/>
@@ -415,8 +445,9 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                 <entity-update value-field="orderPart"/>
             </if>
 
-            <if condition="!paymentMethodId">
+            <if condition="!paymentMethodId &amp;&amp; !isTest">
                 <if condition="!messageObject.data.object.payment_intent">
+                    <!-- TODO: If zero cost product, no payment intent don't error -->
                     <return error="true" type="danger" message="No payment method found for checkout ${messageObject.data.object.id}."/>
                 </if>
                 <script><![CDATA[
@@ -554,13 +585,14 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                     </iterate>
                 </if>
             </if>
-            <if condition="!paymentMethodId">
+            <if condition="!paymentMethodId &amp;&amp; !isTest">
                 <return type="danger" message="No payment method found for checkout ${messageObject.data.object.id} based on stripe problem."/>
             </if>
 
+            <set field="paymentInstrumentEnumId" value="PiStripe"/>
             <service-call name="mantle.order.OrderServices.add#OrderPartPayment" in-map="[
                         orderId:orderPart.orderId,orderPartSeqId:orderPart.orderPartSeqId,
-                        settlementTermId:'Immediate', paymentInstrumentEnumId:'PiStripe',paymentGatewayConfigId:paymentGatewayConfigId,
+                        settlementTermId:'Immediate', paymentInstrumentEnumId:paymentInstrumentEnumId,paymentGatewayConfigId:paymentGatewayConfigId,
                         entryDate:ec.user.nowTimestamp, paymentRefNum:messageObject.data.object.payment_intent,paymentMethodId:paymentMethodId]" out-map="context"/>
             <entity-find-one entity-name="mantle.account.payment.Payment" value-field="payment" auto-field-map="[paymentId:paymentId]" for-update="true"/>
             <!--                <log level="warn" message="handle#Webhook payment.toString() ${payment.toString()}"/>-->
@@ -568,26 +600,41 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <entity-find entity-name="mantle.account.method.PaymentGatewayResponse" list="paymentGatewayResponseList">
                 <econdition field-name="referenceNum" from="messageObject.id"/>
                 <order-by field-name="-transactionDate"/></entity-find>
+            <set field="paymentId" from="payment.paymentId"/>
+            <set field="paymentMethodId" from="payment.paymentMethodId"/>
+            <set field="finAccountId" from="payment.finAccountId"/>
+            <set field="amount" from="(messageObject.data.object.amount_total as BigDecimal) / 100"/>
+            <set field="amountUomId" from="messageObject.data.object.currency.toUpperCase()"/>
+            <set field="transactionDate" from="new Timestamp(messageObject.data.object.created * 1000L)"/>
+            <set field="referenceNum" from="messageObject.id"/>
+            <set field="altReference" from="messageObject.request.idempotency_key"/>
+            <set field="subReference" from="messageObject.data.object.payment_intent"/>
             <service-call name="store#mantle.account.method.PaymentGatewayResponse" out-map="context" in-map="[
                         paymentGatewayResponseId:paymentGatewayResponseList.getFirst()?.paymentGatewayResponseId,
                         paymentGatewayConfigId:paymentGatewayConfigId,
                         paymentOperationEnumId:'PgoAuthAndCapture',
                         paymentId:payment.paymentId,
                         paymentMethodId:payment.paymentMethodId,
-                        amount: (messageObject.data.object.amount_total as BigDecimal) / 100,
-                        amountUomId:messageObject.data.object.currency.toUpperCase(),
-                        finAccountId:payment.finAccountId,
-                        transactionDate:new Timestamp(messageObject.data.object.created * 1000L),
-                        referenceNum:messageObject.id,
-                        altReference:messageObject.request.idempotency_key,
-                        subReference:messageObject.data.object.payment_intent,
+                        amount:amount,
+                        amountUomId:amountUomId,
+                        finAccountId:finAccountId,
+                        transactionDate:transactionDate,
+                        referenceNum:referenceNum,
+                        altReference:altReference,
+                        subReference:subReference,
                         resultSuccess:'Y',
                         resultDeclined:'N',
                         resultError:'N',
                         resultBadExpire:'N',
                         resultBadCardNumber:'N']"/>
 
-            <service-call name="mantle.order.OrderServices.place#Order" in-map="[orderId:orderPart.orderId]"/>
+            <set field="orderId" from="orderPart.orderId"/>
+            <set field="orderPartSeqId" from="orderPart.orderPartSeqId"/>
+            <entity-find-one entity-name="moqui.service.ServiceRegister" value-field="serviceRegister" auto-field-map="[serviceRegisterId:'StripeCheckoutSuccess']"/>
+            <if condition="!serviceRegister || !serviceRegister.serviceName">
+                <return error="true" type="danger" message="No service register found for StripeCheckoutSuccess."/>
+            </if>
+            <service-call name="${serviceRegister.serviceName}" in-map="context"/>
         </actions>
     </service>
     <service verb="consume" noun="CheckoutSessionExpired">
@@ -820,19 +867,28 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <entity-find entity-name="mantle.account.method.PaymentGatewayResponse" list="paymentGatewayResponseList">
                 <econdition field-name="referenceNum" from="messageObject.id"/>
                 <order-by field-name="-transactionDate"/></entity-find>
+            <set field="paymentId" from="payment.paymentId"/>
+            <set field="paymentMethodId" from="payment.paymentMethodId"/>
+            <set field="finAccountId" from="payment.finAccountId"/>
+            <set field="amount" from="(messageObject.data.object.amount_total as BigDecimal) / 100"/>
+            <set field="amountUomId" from="messageObject.data.object.currency.toUpperCase()"/>
+            <set field="transactionDate" from="new Timestamp(messageObject.data.object.created * 1000L)"/>
+            <set field="referenceNum" from="messageObject.id"/>
+            <set field="altReference" from="messageObject.request.idempotency_key"/>
+            <set field="subReference" from="messageObject.data.object.payment_intent"/>
             <service-call name="store#mantle.account.method.PaymentGatewayResponse" out-map="context" in-map="[
                         paymentGatewayResponseId:paymentGatewayResponseList.getFirst()?.paymentGatewayResponseId,
                         paymentGatewayConfigId:paymentGatewayConfigId,
                         paymentOperationEnumId:'PgoRelease',
-                        paymentId:payment?.paymentId,
-                        paymentMethodId:payment?.paymentMethodId,
-                        amount: (messageObject.data.object.amount_total as BigDecimal) / 100,
-                        amountUomId:messageObject.data.object.currency.toUpperCase(),
-                        finAccountId:payment?.finAccountId,
-                        transactionDate:new Timestamp(messageObject.data.object.created * 1000L),
-                        referenceNum:messageObject.id,
-                        altReference:messageObject.request.idempotency_key,
-                        subReference:messageObject.data.object.payment_intent,
+                        paymentId:paymentId,
+                        paymentMethodId:paymentMethodId,
+                        amount:amount,
+                        amountUomId:amountUomId,
+                        finAccountId:finAccountId,
+                        transactionDate:transactionDate,
+                        referenceNum:referenceNum,
+                        altReference:altReference,
+                        subReference:subReference,
                         resultSuccess:'N',
                         resultDeclined:'Y',
                         resultError:'N',
@@ -844,6 +900,29 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                 <entity-update value-field="payment"/>
             </if>
 
+            <set field="orderId" from="orderPart.orderId"/>
+            <set field="orderPartSeqId" from="orderPart.orderPartSeqId"/>
+            <entity-find-one entity-name="moqui.service.ServiceRegister" value-field="serviceRegister" auto-field-map="[serviceRegisterId:'StripeCheckoutExpired']"/>
+            <if condition="!serviceRegister || !serviceRegister.serviceName">
+                <return error="true" type="danger" message="No service register found for StripeCheckoutExpired."/>
+            </if>
+            <service-call name="${serviceRegister.serviceName}" in-map="context + serviceRegister."/>
+        </actions>
+    </service>
+
+    <service verb="reject" noun="OrderPart">
+        <in-parameters>
+            <parameter name="orderId" required="true"/>
+            <parameter name="orderPartSeqId" required="true"/>
+            <parameter name="orderPart" type="Map"/>
+        </in-parameters>
+        <actions>
+            <if condition="!orderPart">
+                <entity-find-one entity-name="mantle.order.OrderPart" value-field="orderPart" auto-field-map="[orderId:orderId,orderPartSeqId:orderPartSeqId]"/>
+            </if>
+            <if condition="!orderPart">
+                <return message="OrderPart not found for orderId ${orderId} and orderPartSeqId ${orderPartSeqId}."/>
+            </if>
             <if condition="orderPart.statusId != 'OrderRejected' &amp;&amp; orderPart.statusId != 'OrderCancelled'">
                 <service-call name="mantle.order.OrderServices.reject#OrderPart" in-map="[orderId:orderPart.orderId,orderPartSeqId:orderPart.orderPartSeqId]"/>
             </if>
