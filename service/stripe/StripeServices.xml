@@ -315,7 +315,7 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                     <order-by field-name="-lastUpdatedStamp,orderPartSeqId"/>
                 </entity-find>
                 <if condition="orderPartList.size() == 0">
-                    <return error="true" type="danger" message="No order part found for checkoutId ${messageObject.data.object.id}"/>
+                    <return type="warning" message="No order part found for checkoutId ${messageObject.data.object.id}"/>
                 </if>
                 <if condition="orderPartList.size() &gt;= 2">
                     <log level="warn" message="Multiple order parts found for checkoutId ${messageObject.data.object.id}"/>
