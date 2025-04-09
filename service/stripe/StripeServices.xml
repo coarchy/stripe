@@ -14,7 +14,7 @@ along with this software (see the LICENSE.md file). If not, see
 -->
 <services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://moqui.org/xsd/service-definition-3.xsd">
     <service verb="create" noun="CheckoutFromSalesOrder">
-        <description>Create a Stripe Checkout Session from an Order to capture a Payment. Customer party not required.
+        <description>Careful exposing directly to an untrusted user!Create a Stripe Checkout Session from an Order to capture a Payment. Customer party not required.
 Will return a used checkoutId and checkoutUrl if the OrderPart has already created a checkout session with the same orderItems, quantities, and prices.
 
 Only one Order Part is supported so that the customer party is clear.</description>
@@ -28,6 +28,7 @@ Only one Order Part is supported so that the customer party is clear.</descripti
             <parameter name="setup_future_usage" required="true" default-value="on_session"><description>
                 Setup future usage for the PaymentIntent. One of on_session or off_session. Default is on_session. See: https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-payment_intent_data-setup_future_usage
             </description></parameter>
+            <parameter name="assumeInvalidCustomerId" default="false" required="true"><description>Only useful for testing.</description></parameter>
         </in-parameters>
         <out-parameters>
             <parameter name="checkoutId"/>
@@ -68,7 +69,7 @@ Only one Order Part is supported so that the customer party is clear.</descripti
                     <econdition field-name="partyIdTypeEnumId" value="PtidSci"/>
                     <econdition field-name="expireDate" operator="less-equals" from="ec.user.nowTimestamp" or-null="true"/>
                 </entity-find>
-                <if condition="partyIdentificationList.getFirst()?.idValue">
+                <if condition="partyIdentificationList.getFirst()?.idValue &amp;&amp; !assumeInvalidCustomerId">
                     <set field="customer_creation" value="if_required"/>
                     <set field="customer" from="partyIdentificationList.getFirst()?.idValue"/>
                 </if>
